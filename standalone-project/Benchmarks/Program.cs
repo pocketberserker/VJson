@@ -1,7 +1,7 @@
 ﻿using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Text;
-using VJson;
+using Benchmarks.Serializers;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 
@@ -9,25 +9,21 @@ namespace Benchmarks
 {
     public class Deserializer
     {
+        [ParamsSource(nameof(Serializers))]
+        public Serializer Serializer;
+
+        public IEnumerable<Serializer> Serializers => new Serializer[]
+        {
+            new VJsonSerializer(),
+        };
+
         private readonly byte[] i = Encoding.UTF8.GetBytes("255");
 
         [Benchmark]
-        public object IntegerToByte() {
-            using(var ms = new MemoryStream(i))
-            {
-                var d = new JsonDeserializer(typeof(byte));
-                return d.Deserialize(ms);
-            }
-        }
+        public object IntegerToByte() => this.Serializer.Deserialize<byte>(i);
 
         [Benchmark]
-        public object IntegerToLong() {
-            using(var ms = new MemoryStream(i))
-            {
-                var d = new JsonDeserializer(typeof(long));
-                return d.Deserialize(ms);
-            }
-        }
+        public object IntegerToLong() => this.Serializer.Deserialize<long>(i);
     }
 
     public class Program
