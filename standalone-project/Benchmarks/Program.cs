@@ -15,6 +15,7 @@ namespace Benchmarks
         public IEnumerable<Serializer> Serializers => new Serializer[]
         {
             new VJsonSerializer(),
+            new SystemTextJsonSerializer(),
         };
 
         private readonly byte[] i = Encoding.UTF8.GetBytes("255");
