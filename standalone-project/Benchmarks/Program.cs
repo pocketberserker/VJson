@@ -7,6 +7,7 @@ using BenchmarkDotNet.Running;
 
 namespace Benchmarks
 {
+    [Config(typeof(BenchmarkConfig))]
     public class Deserializer
     {
         [ParamsSource(nameof(Serializers))]
