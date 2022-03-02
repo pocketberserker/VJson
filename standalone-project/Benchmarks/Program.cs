@@ -8,7 +8,7 @@ using BenchmarkDotNet.Running;
 namespace Benchmarks
 {
     [Config(typeof(BenchmarkConfig))]
-    public class Deserializer
+    public class AllSerializerBenchmark
     {
         [ParamsSource(nameof(Serializers))]
         public Serializer Serializer;
@@ -21,19 +21,27 @@ namespace Benchmarks
         };
 
         private readonly byte[] i = Encoding.UTF8.GetBytes("255");
+        private readonly byte b = 255;
+        private readonly long l = 255L;
 
         [Benchmark]
         public object IntegerToByte() => this.Serializer.Deserialize<byte>(i);
 
         [Benchmark]
         public object IntegerToLong() => this.Serializer.Deserialize<long>(i);
+
+        [Benchmark]
+        public object SerializeByte() => this.Serializer.Serialize(b);
+
+        [Benchmark]
+        public object SerializeLong() => this.Serializer.Serialize(l);
     }
 
     public class Program
     {
         public static void Main(string[] args)
         {
-            var summary = BenchmarkRunner.Run<Deserializer>();
+            var summary = BenchmarkRunner.Run<AllSerializerBenchmark>();
         }
     }
 }
