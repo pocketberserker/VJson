@@ -7,13 +7,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.IO;
+using System.Buffers;
+using System.Globalization;
+using System.Text;
 
 namespace VJson
 {
     /// <summary>
-    /// Write JSON data to streams as UTF-8.
+    /// Write JSON data to buffer as UTF-8.
     /// </summary>
     // TODO: Add [Preserve] in Unity
     public sealed class JsonWriter : IDisposable
@@ -34,19 +35,15 @@ namespace VJson
             None,
         }
 
-        private StreamWriter _writer;
+        private IBufferWriter<byte> _writer;
         private int _indent;
-        private string _indentStr = null;
 
         private Stack<State> _states = new Stack<State>();
 
-        public JsonWriter(Stream s, int indent = 0)
+        public JsonWriter(IBufferWriter<byte> writer, int indent = 0)
         {
-            _writer = new StreamWriter(s); // UTF-8 by default
+            _writer = writer;
             _indent = indent;
-            if (_indent > 0) {
-                _indentStr = new String(' ', _indent);
-            }
 
             _states.Push(new State
             {
@@ -59,7 +56,7 @@ namespace VJson
         {
             if (_writer != null)
             {
-                ((IDisposable)_writer).Dispose();
+                _writer = null;
             }
         }
 
@@ -72,7 +69,7 @@ namespace VJson
             }
 
             WriteDelimiter();
-            _writer.Write("{");
+            WriteRaw((byte)'{');
 
             _states.Push(new State
             {
@@ -90,7 +87,7 @@ namespace VJson
             }
 
             WriteValue(key);
-            _writer.Write(":");
+            WriteRaw((byte)':');
 
             _states.Pop();
             _states.Push(new State
@@ -114,7 +111,7 @@ namespace VJson
             {
                 WriteIndentBreakForHuman(_states.Peek().Depth);
             }
-            _writer.Write("}");
+            WriteRaw((byte)'}');
         }
 
         public void WriteArrayStart()
@@ -126,7 +123,7 @@ namespace VJson
             }
 
             WriteDelimiter();
-            _writer.Write("[");
+            WriteRaw((byte)'[');
 
             _states.Push(new State
             {
@@ -149,14 +146,32 @@ namespace VJson
             {
                 WriteIndentBreakForHuman(_states.Peek().Depth);
             }
-            _writer.Write("]");
+            WriteRaw((byte)']');
         }
 
         public void WriteValue(bool v)
         {
             WriteDelimiter();
 
-            _writer.Write(v ? "true" : "false");
+            if (v)
+            {
+                Span<byte> span = _writer.GetSpan(4);
+                span[0] = (byte)'t';
+                span[1] = (byte)'r';
+                span[2] = (byte)'u';
+                span[3] = (byte)'e';
+                _writer.Advance(4);
+            }
+            else
+            {
+                Span<byte> span = _writer.GetSpan(5);
+                span[0] = (byte)'f';
+                span[1] = (byte)'a';
+                span[2] = (byte)'l';
+                span[3] = (byte)'s';
+                span[4] = (byte)'e';
+                _writer.Advance(5);
+            }
         }
 
         public void WriteValue(byte v)
@@ -223,50 +238,173 @@ namespace VJson
         {
             WriteDelimiter();
 
-            _writer.Write('\"');
-            _writer.Write(Escape(v).ToArray());
-            _writer.Write('\"');
+            WriteRaw((byte)'\"');
+            WriteString(v);
+            WriteRaw((byte)'\"');
         }
 
         public void WriteValueNull()
         {
             WriteDelimiter();
 
-            _writer.Write("null");
+            Span<byte> span = _writer.GetSpan(4);
+            span[0] = (byte)'n';
+            span[1] = (byte)'u';
+            span[2] = (byte)'l';
+            span[3] = (byte)'l';
+            _writer.Advance(4);
+        }
+
+        void WritePrimitive(byte v)
+        {
+            WritePrimitive((ulong)v);
+        }
+
+        void WriteRaw(byte v)
+        {
+            Span<byte> span = _writer.GetSpan(1);
+            span[0] = v;
+            _writer.Advance(1);
+        }
+
+        void WritePrimitive(sbyte v)
+        {
+            WritePrimitive((long)v);
+        }
+
+        void WritePrimitive(short v)
+        {
+            WritePrimitive((long)v);
+        }
+
+        void WritePrimitive(ushort v)
+        {
+            WritePrimitive((ulong)v);
+        }
+
+        void WritePrimitive(int v)
+        {
+            WritePrimitive((long)v);
+        }
+
+        void WritePrimitive(uint v)
+        {
+            WritePrimitive((ulong)v);
+        }
+
+        void WritePrimitive(long v)
+        {
+            WriteDelimiter();
+            
+            long value = v;
+
+            if (v < 0)
+            {
+                if (v == long.MinValue)
+                {
+                    var offset = 0;
+                    Span<byte> span = _writer.GetSpan(20);
+                    span[offset++] = (byte)'-';
+                    span[offset++] = (byte)'9';
+                    span[offset++] = (byte)'2';
+                    span[offset++] = (byte)'2';
+                    span[offset++] = (byte)'3';
+                    span[offset++] = (byte)'3';
+                    span[offset++] = (byte)'7';
+                    span[offset++] = (byte)'2';
+                    span[offset++] = (byte)'0';
+                    span[offset++] = (byte)'3';
+                    span[offset++] = (byte)'6';
+                    span[offset++] = (byte)'8';
+                    span[offset++] = (byte)'5';
+                    span[offset++] = (byte)'4';
+                    span[offset++] = (byte)'7';
+                    span[offset++] = (byte)'7';
+                    span[offset++] = (byte)'5';
+                    span[offset++] = (byte)'8';
+                    span[offset++] = (byte)'0';
+                    span[offset++] = (byte)'8';
+                    _writer.Advance(20);
+                    return;
+                }
+
+                WriteRaw((byte)'-');
+                value = unchecked(-value);
+            }
+
+            WriteUlong((ulong)value);
+        }
+
+        void WritePrimitive(ulong v)
+        {
+            WriteDelimiter();
+
+            WriteUlong(v);
+        }
+
+        void WriteUlong(ulong v)
+        {
+            if (v < 10)
+            {
+                WriteRaw((byte)('0' + v));
+                return;
+            }
+
+            ulong value = v;
+            var digits = (int)Math.Floor(Math.Log10(v) + 1);
+
+            Span<byte> span = _writer.GetSpan(digits);
+            for (var i = digits; i > 0; i--)
+            {
+                var temp = '0' + value;
+                value /= 10;
+                span[i - 1] = (byte)(temp - value * 10);
+            }
+
+            _writer.Advance(digits);
         }
 
         void WritePrimitive(char v)
         {
-            WritePrimitive<int>((int)v);
+            WritePrimitive((ulong)v);
         }
 
         void WritePrimitive(float v)
         {
-            WritePrimitive<string>(string.Format("{0:G9}", v));
+            WritePrimitive(string.Format("{0:G9}", v));
         }
 
         void WritePrimitive(double v)
         {
-            WritePrimitive<string>(string.Format("{0:G17}", v));
+            WritePrimitive(string.Format("{0:G17}", v));
         }
 
-        void WritePrimitive<T>(T v)
+        void WritePrimitive(decimal v)
+        {
+            WritePrimitive(v.ToString(CultureInfo.InvariantCulture));
+        }
+
+        void WritePrimitive(string v)
         {
             WriteDelimiter();
-
-            _writer.Write(v);
+            WriteString(v);
         }
 
         void WriteIndentBreakForHuman(int depth)
         {
             if (_indent > 0)
             {
-                _writer.Write('\n');
+                var size = depth * _indent + 1;
+                Span<byte> span = _writer.GetSpan(size);
 
-                for (int i = 0; i < depth; ++i)
+                span[0] = (byte)'\n';
+
+                for (int i = 1; i < size; i++)
                 {
-                    _writer.Write(_indentStr);
+                    span[i] = (byte)' ';
                 }
+
+                _writer.Advance(size);
             }
         }
 
@@ -274,7 +412,7 @@ namespace VJson
         {
             if (_indent > 0)
             {
-                _writer.Write(' ');
+                WriteRaw((byte)' ');
             }
         }
 
@@ -301,7 +439,7 @@ namespace VJson
 
             if (state.Kind == StateKind.ArrayOther || state.Kind == StateKind.ObjectKeyOther)
             {
-                _writer.Write(",");
+                WriteRaw((byte)',');
 
                 WriteIndentBreakForHuman(state.Depth);
             }
@@ -319,51 +457,76 @@ namespace VJson
             }
         }
 
-        IEnumerable<char> Escape(string s)
+        void WriteString(string s)
         {
-            foreach(var c in s)
+            var from = 0;
+            var max = Encoding.UTF8.GetByteCount(s);
+            Span<byte> span = _writer.GetSpan(max);
+
+            for (var i = 0; i < s.Length; i += char.IsSurrogatePair(s, i) ? 2 : 1)
             {
-                char modified = default(char);
+                if (char.IsSurrogatePair(s, i))
+                {
+                    from += Encoding.UTF8.GetBytes(s.AsSpan(i, 2), span.Slice(from, 4));
+                    continue;
+                }
+
+                if (s[i] > 0x7f)
+                {
+                    var cs = s.AsSpan(i, 1);
+                    from += Encoding.UTF8.GetBytes(cs, span.Slice(from, Encoding.UTF8.GetByteCount(cs)));
+                    continue;
+                }
+
+                var c = s[i];
+                byte modified = default(byte);
                 if (c <= 0x20 || c == '\"' || c == '\\')
                 {
                     switch(c)
                     {
                         case '\"':
-                            modified = '\"';
+                            modified = (byte)'\"';
                             break;
-
+    
                         case '\\':
-                            modified = '\\';
+                            modified = (byte)'\\';
                             break;
-
+    
                         case '\b':
-                            modified = 'b';
+                            modified = (byte)'b';
                             break;
-
+    
                         case '\n':
-                            modified = 'n';
+                            modified = (byte)'n';
                             break;
-
+    
                         case '\r':
-                            modified = 'r';
+                            modified = (byte)'r';
                             break;
-
+    
                         case '\t':
-                            modified = 't';
+                            modified = (byte)'t';
                             break;
                     }
                 }
-
+    
                 if (modified != default(char))
                 {
-                    yield return '\\';
-                    yield return modified;
+                    span[from] = (byte)'\\';
+                    span[from + 1] = modified;
+
+                    from += 2;
+                    max++;
+                    span = _writer.GetSpan(max);
+                    
+                    continue;
                 }
-                else
-                {
-                    yield return c;
-                }
+                
+                span[from] = (byte)c;
+                from++;
             }
+
+            _writer.Advance(max);
         }
     }
 }
