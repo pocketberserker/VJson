@@ -9,6 +9,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
+using System.Buffers;
 
 namespace VJson
 {
@@ -23,32 +24,35 @@ namespace VJson
 
         #region Serializer
 
-        public void Serialize<T>(Stream s, T o, int indent = 0)
+        public void Serialize<T>(IBufferWriter<byte> b, T o, int indent = 0)
         {
-            using (var w = new JsonWriter(s, indent))
+            using (var w = new JsonWriter(b, indent))
             {
                 SerializeValue(w, o);
             }
         }
 
+        public void Serialize<T>(Stream s, T o, int indent = 0)
+        {
+            var b = new ArrayBufferWriter<byte>();
+            Serialize(b, o, indent);
+            s.Write(b.WrittenMemory.Span);
+        }
+
         public string Serialize<T>(T o, int indent = 0)
         {
-            using (var s = new MemoryStream())
+            var b = new ArrayBufferWriter<byte>();
+            using (var w = new JsonWriter(b, indent))
             {
-                Serialize(s, o, indent);
-                return Encoding.UTF8.GetString(s.ToArray());
+                SerializeValue(w, o);
+                return Encoding.UTF8.GetString(b.WrittenMemory.Span);
             }
         }
 
         public INode SerializeToNode<T>(T o)
         {
             // TODO: fix performance...
-            byte[] buffer = null;
-            using (var s = new MemoryStream())
-            {
-                Serialize<T>(s, o, 0);
-                buffer = s.ToArray();
-            }
+            var buffer = SerializeToBytes(o);
 
             using (var s = new MemoryStream(buffer))
             {
