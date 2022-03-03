@@ -18,6 +18,7 @@ namespace Benchmarks
             new VJsonSerializer(),
             new SystemTextJsonSerializer(),
             new SpanJsonSerializer(),
+            new NetJSONSerializer(),
         };
 
         private readonly byte[] i = Encoding.UTF8.GetBytes("255");
