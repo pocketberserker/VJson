@@ -64,10 +64,12 @@ namespace VJson
                     return DeserializeToBoolean(node, targetKind, targetType, state);
 
                 case NodeKind.Integer:
+                case NodeKind.EnumInteger:
                 case NodeKind.Float:
                     return DeserializeToNumber(node, targetKind, targetType, state);
 
                 case NodeKind.String:
+                case NodeKind.EnumString:
                     return DeserializeToString(node, targetKind, targetType, state);
 
                 case NodeKind.Array:

@@ -22,6 +22,9 @@ namespace VJson
         Boolean,
         Null,
 
+        EnumInteger, // Number
+        EnumString,
+
         Undefined,
     }
 
@@ -536,8 +539,8 @@ namespace VJson
             {
                 var attr = TypeHelper.GetCustomAttribute<JsonAttribute>(ty);
                 return attr != null && attr.EnumConversion == EnumConversionType.AsString
-                    ? NodeKind.String
-                    : NodeKind.Integer;
+                    ? NodeKind.EnumString
+                    : NodeKind.EnumInteger;
             }
 
             // Arrays

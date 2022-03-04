@@ -321,8 +321,9 @@ namespace VJson.Schema
                     };
 
                 case NodeKind.Integer:
+                case NodeKind.EnumInteger:
                     object[] enumsForInteger = null;
-                    if (TypeHelper.TypeWrap(ty).IsEnum)
+                    if (kind == NodeKind.EnumInteger)
                     {
                         enumsForInteger = System.Enum.GetValues(ty).Cast<object>().ToArray();
                     }
@@ -339,8 +340,9 @@ namespace VJson.Schema
                     };
 
                 case NodeKind.String:
+                case NodeKind.EnumString:
                     object[] enumsForString = null;
-                    if (TypeHelper.TypeWrap(ty).IsEnum)
+                    if (kind == NodeKind.EnumString)
                     {
                         enumsForString = TypeHelper.GetStringEnumNames(ty);
                     }

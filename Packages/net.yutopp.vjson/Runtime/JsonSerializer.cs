@@ -93,6 +93,10 @@ namespace VJson
                 case NodeKind.Boolean:
                     SerializePrimitive(writer, o);
                     return;
+                case NodeKind.EnumInteger:
+                case NodeKind.EnumString:
+                    SerializeEnum(writer, o);
+                    return;
                 case NodeKind.Array:
                     SerializeArray(writer, o);
                     return;
@@ -102,6 +106,22 @@ namespace VJson
                 case NodeKind.Null:
                     SerializeNull(writer, o);
                     return;
+            }
+        }
+
+        void SerializeEnum<T>(JsonWriter writer, T o)
+        {
+            var attr = TypeHelper.GetCustomAttribute<JsonAttribute>(o.GetType());
+            switch (attr != null ? attr.EnumConversion : EnumConversionType.AsInt)
+            {
+                case EnumConversionType.AsInt:
+                    // Convert to simple integer
+                    SerializeValue(writer, Convert.ChangeType(o, Enum.GetUnderlyingType(o.GetType())));
+                    break;
+
+                case EnumConversionType.AsString:
+                    SerializeValue(writer, TypeHelper.GetStringEnumNameOf(o));
+                    break;
             }
         }
 
@@ -125,24 +145,6 @@ namespace VJson
 
         void SerializePrimitive<T>(JsonWriter writer, T o)
         {
-            if (TypeHelper.TypeWrap(o.GetType()).IsEnum)
-            {
-                var attr = TypeHelper.GetCustomAttribute<JsonAttribute>(o.GetType());
-                switch (attr != null ? attr.EnumConversion : EnumConversionType.AsInt)
-                {
-                    case EnumConversionType.AsInt:
-                        // Convert to simple integer
-                        SerializeValue(writer, Convert.ChangeType(o, Enum.GetUnderlyingType(o.GetType())));
-                        break;
-
-                    case EnumConversionType.AsString:
-                        SerializeValue(writer, TypeHelper.GetStringEnumNameOf(o));
-                        break;
-                }
-
-                return;
-            }
-
             Action<JsonWriter, object> write;
             if (writeActionMap.TryGetValue(o.GetType(), out write))
             {

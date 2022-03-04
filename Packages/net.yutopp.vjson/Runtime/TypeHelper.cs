@@ -233,6 +233,8 @@ namespace VJson
                 case NodeKind.Integer:
                 case NodeKind.Float:
                 case NodeKind.String:
+                case NodeKind.EnumInteger:
+                case NodeKind.EnumString:
                     return Object.Equals(lhs, rhs);
 
                 case NodeKind.Array:

@@ -89,7 +89,7 @@ namespace VJson.Schema
             if (_schema.Enum != null)
             {
                 var oEnum = o;
-                if (o != null && TypeHelper.TypeWrap(o.GetType()).IsEnum && kind == NodeKind.String)
+                if (o != null && kind == NodeKind.EnumString)
                 {
                     oEnum = TypeHelper.GetStringEnumNameOf(o);
                 }
@@ -189,6 +189,7 @@ namespace VJson.Schema
 
                 case NodeKind.Float:
                 case NodeKind.Integer:
+                case NodeKind.EnumInteger:
                     ex = ValidateNumber(Convert.ToDouble(o), state, reg);
 
                     if (ex != null)
@@ -198,8 +199,9 @@ namespace VJson.Schema
                     break;
 
                 case NodeKind.String:
+                case NodeKind.EnumString:
                     var oConverted =
-                        (o != null && TypeHelper.TypeWrap(o.GetType()).IsEnum)
+                        (o != null && kind == NodeKind.EnumString)
                         ? TypeHelper.GetStringEnumNameOf(o)
                         : (string)o;
 
@@ -624,10 +626,10 @@ namespace VJson.Schema
                     return kind == NodeKind.Integer || kind == NodeKind.Float;
 
                 case "string":
-                    return kind == NodeKind.String;
+                    return kind == NodeKind.String || kind == NodeKind.EnumString;
 
                 case "integer":
-                    return kind == NodeKind.Integer;
+                    return kind == NodeKind.Integer || kind == NodeKind.EnumInteger;
 
                 default:
                     throw new NotImplementedException();

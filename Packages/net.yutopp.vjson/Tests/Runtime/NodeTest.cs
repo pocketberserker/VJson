@@ -37,8 +37,8 @@ namespace VJson.UnitTests
             new object[] { new object[] {}, NodeKind.Array },
             new object[] { new List<int>(), NodeKind.Array },
             new object[] { new Dictionary<string, object>(), NodeKind.Object },
-            new object[] { EnumAsInt.A, NodeKind.Integer },
-            new object[] { EnumAsString.NameA, NodeKind.String },
+            new object[] { EnumAsInt.A, NodeKind.EnumInteger },
+            new object[] { EnumAsString.NameA, NodeKind.EnumString },
         };
     }
 
