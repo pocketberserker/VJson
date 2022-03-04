@@ -22,6 +22,7 @@ namespace Benchmarks
         };
 
         private readonly byte[] i = Encoding.UTF8.GetBytes("255");
+        private readonly string s = "test";
         private readonly byte b = 255;
         private readonly long l = 255L;
 
@@ -36,6 +37,9 @@ namespace Benchmarks
 
         [Benchmark]
         public object SerializeLong() => this.Serializer.Serialize(l);
+
+        [Benchmark]
+        public object SerializeString() => this.Serializer.Serialize(s);
     }
 
     public class Program
