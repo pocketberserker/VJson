@@ -9,7 +9,7 @@ namespace Benchmarks.Serializers
         public override object Serialize<T>(T input)
         {
             var serializer = new JsonSerializer(typeof(T));
-            return serializer.Serialize(input);
+            return serializer.SerializeToBytes(input);
         }
 
         public override T Deserialize<T>(object input)

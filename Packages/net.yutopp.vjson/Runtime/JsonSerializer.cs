@@ -41,11 +41,21 @@ namespace VJson
 
         public string Serialize<T>(T o, int indent = 0)
         {
+            return Encoding.UTF8.GetString(SerializeToSpan(o, indent));
+        }
+
+        public byte[] SerializeToBytes<T>(T o, int indent = 0)
+        {
+            return SerializeToSpan(o, indent).ToArray();
+        }
+
+        ReadOnlySpan<byte> SerializeToSpan<T>(T o, int indent = 0)
+        {
             var b = new ArrayBufferWriter<byte>();
             using (var w = new JsonWriter(b, indent))
             {
                 SerializeValue(w, o);
-                return Encoding.UTF8.GetString(b.WrittenMemory.Span);
+                return b.WrittenMemory.Span;
             }
         }
 
