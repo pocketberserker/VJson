@@ -26,10 +26,8 @@ namespace VJson
 
         public void Serialize<T>(IBufferWriter<byte> b, T o, int indent = 0)
         {
-            using (var w = new JsonWriter(b, indent))
-            {
-                SerializeValue(w, o);
-            }
+            var w = new JsonWriter(b, indent);
+            SerializeValue(w, o);
         }
 
         public void Serialize<T>(Stream s, T o, int indent = 0)
@@ -52,11 +50,9 @@ namespace VJson
         ReadOnlySpan<byte> SerializeToSpan<T>(T o, int indent = 0)
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var w = new JsonWriter(b, indent))
-            {
-                SerializeValue(w, o);
-                return b.WrittenMemory.Span;
-            }
+            var w = new JsonWriter(b, indent);
+            SerializeValue(w, o);
+            return b.WrittenMemory.Span;
         }
 
         public INode SerializeToNode<T>(T o)

@@ -19,10 +19,9 @@ namespace VJson.UnitTests
         public void ValueWriteTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
-            {
-                f.WriteValue(1);
-            }
+            var f = new JsonWriter(b);
+
+            f.WriteValue(1);
 
             var actual = Encoding.UTF8.GetString(b.WrittenMemory.ToArray());
             Assert.AreEqual("1", actual);
@@ -32,10 +31,9 @@ namespace VJson.UnitTests
         public void EmojiValueWriteTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
-            {
-                f.WriteValue("🍣");
-            }
+            var f = new JsonWriter(b);
+
+            f.WriteValue("🍣");
 
             // Check UTF-8 sequence
             var actualArr = b.WrittenMemory.ToArray();
@@ -54,10 +52,9 @@ namespace VJson.UnitTests
         public void EscapeSequenceValueWriteTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
-            {
-                f.WriteValue("\"\\/\b\n\r\t");
-            }
+            var f = new JsonWriter(b);
+
+            f.WriteValue("\"\\/\b\n\r\t");
 
             var actual = Encoding.UTF8.GetString(b.WrittenMemory.ToArray());
             Assert.AreEqual("\"\\\"\\\\/\\b\\n\\r\\t\"", actual);
@@ -70,11 +67,10 @@ namespace VJson.UnitTests
         public void EmptyTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
-            {
-                f.WriteObjectStart();
-                f.WriteObjectEnd();
-            }
+            var f = new JsonWriter(b);
+
+            f.WriteObjectStart();
+            f.WriteObjectEnd();
 
             var actual = Encoding.UTF8.GetString(b.WrittenMemory.ToArray());
             Assert.AreEqual(@"{}", actual);
@@ -84,13 +80,12 @@ namespace VJson.UnitTests
         public void SingleTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
-            {
-                f.WriteObjectStart();
-                f.WriteObjectKey("foo");
-                f.WriteValue(42);
-                f.WriteObjectEnd();
-            }
+            var f = new JsonWriter(b);
+
+            f.WriteObjectStart();
+            f.WriteObjectKey("foo");
+            f.WriteValue(42);
+            f.WriteObjectEnd();
 
             var actual = Encoding.UTF8.GetString(b.WrittenMemory.ToArray());
             Assert.AreEqual(@"{""foo"":42}", actual);
@@ -100,16 +95,15 @@ namespace VJson.UnitTests
         public void MultiTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
-            {
-                f.WriteObjectStart();
-                f.WriteObjectKey("foo");
-                f.WriteValue(42);
+            var f = new JsonWriter(b);
+
+            f.WriteObjectStart();
+            f.WriteObjectKey("foo");
+            f.WriteValue(42);
     
-                f.WriteObjectKey("bar");
-                f.WriteValue(84);
-                f.WriteObjectEnd();
-            }
+            f.WriteObjectKey("bar");
+            f.WriteValue(84);
+            f.WriteObjectEnd();
 
             var actual = Encoding.UTF8.GetString(b.WrittenMemory.ToArray());
             Assert.AreEqual(@"{""foo"":42,""bar"":84}", actual);
@@ -119,18 +113,17 @@ namespace VJson.UnitTests
         public void NestedTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
-            {
-                f.WriteObjectStart();
-                f.WriteObjectKey("foo");
+            var f = new JsonWriter(b);
 
-                f.WriteObjectStart();
-                f.WriteObjectKey("bar");
-                f.WriteValue(84);
-                f.WriteObjectEnd();
+            f.WriteObjectStart();
+            f.WriteObjectKey("foo");
+
+            f.WriteObjectStart();
+            f.WriteObjectKey("bar");
+            f.WriteValue(84);
+            f.WriteObjectEnd();
                 
-                f.WriteObjectEnd();
-            }
+            f.WriteObjectEnd();
 
             var actual = Encoding.UTF8.GetString(b.WrittenMemory.ToArray());
             Assert.AreEqual(@"{""foo"":{""bar"":84}}", actual);
@@ -143,11 +136,10 @@ namespace VJson.UnitTests
         public void EmptyTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
-            {
-                f.WriteArrayStart();
-                f.WriteArrayEnd();
-            }
+            var f = new JsonWriter(b);
+
+            f.WriteArrayStart();
+            f.WriteArrayEnd();
 
             var actual = Encoding.UTF8.GetString(b.WrittenMemory.ToArray());
             Assert.AreEqual(@"[]", actual);
@@ -157,12 +149,11 @@ namespace VJson.UnitTests
         public void SingleTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
-            {
-                f.WriteArrayStart();
-                f.WriteValue(42);
-                f.WriteArrayEnd();
-            }
+            var f = new JsonWriter(b);
+
+            f.WriteArrayStart();
+            f.WriteValue(42);
+            f.WriteArrayEnd();
 
             var actual = Encoding.UTF8.GetString(b.WrittenMemory.ToArray());
             Assert.AreEqual(@"[42]", actual);
@@ -172,13 +163,12 @@ namespace VJson.UnitTests
         public void MultiTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
-            {
-                f.WriteArrayStart();
-                f.WriteValue(42);
-                f.WriteValue("aaa");
-                f.WriteArrayEnd();
-            }
+            var f = new JsonWriter(b);
+
+            f.WriteArrayStart();
+            f.WriteValue(42);
+            f.WriteValue("aaa");
+            f.WriteArrayEnd();
 
             var actual = Encoding.UTF8.GetString(b.WrittenMemory.ToArray());
             Assert.AreEqual(@"[42,""aaa""]", actual);
@@ -188,15 +178,14 @@ namespace VJson.UnitTests
         public void NestedTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
-            {
+            var f = new JsonWriter(b);
+
                 f.WriteArrayStart();
                 f.WriteValue(42);
                 f.WriteArrayStart();
                 f.WriteValue("aaa");
                 f.WriteArrayEnd();
                 f.WriteArrayEnd();
-            }
 
             var actual = Encoding.UTF8.GetString(b.WrittenMemory.ToArray());
             Assert.AreEqual(@"[42,[""aaa""]]", actual);
@@ -209,24 +198,23 @@ namespace VJson.UnitTests
         public void CompoundTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
-            {
-                f.WriteArrayStart();
-    
-                f.WriteObjectStart();
-                f.WriteObjectKey("foo");
-                f.WriteValue(42);
-                f.WriteObjectEnd();
-    
-                f.WriteObjectStart();
-                f.WriteObjectKey("foo");
-                f.WriteArrayStart();
-                f.WriteValue(84);
-                f.WriteArrayEnd();
-                f.WriteObjectEnd();
-    
-                f.WriteArrayEnd();
-            }
+            var f = new JsonWriter(b);
+
+            f.WriteArrayStart();
+
+            f.WriteObjectStart();
+            f.WriteObjectKey("foo");
+            f.WriteValue(42);
+            f.WriteObjectEnd();
+
+            f.WriteObjectStart();
+            f.WriteObjectKey("foo");
+            f.WriteArrayStart();
+            f.WriteValue(84);
+            f.WriteArrayEnd();
+            f.WriteObjectEnd();
+
+            f.WriteArrayEnd();
 
             var actual = Encoding.UTF8.GetString(b.WrittenMemory.ToArray());
             Assert.AreEqual(@"[{""foo"":42},{""foo"":[84]}]", actual);
