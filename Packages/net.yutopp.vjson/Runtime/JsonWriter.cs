@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Buffers;
 using System.Globalization;
 using System.Text;
+using System.Runtime.CompilerServices;
 
 namespace VJson
 {
@@ -255,6 +256,7 @@ namespace VJson
             _writer.Advance(4);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void WritePrimitive(byte v)
         {
             WritePrimitive((ulong)v);
@@ -267,26 +269,31 @@ namespace VJson
             _writer.Advance(1);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void WritePrimitive(sbyte v)
         {
             WritePrimitive((long)v);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void WritePrimitive(short v)
         {
             WritePrimitive((long)v);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void WritePrimitive(ushort v)
         {
             WritePrimitive((ulong)v);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void WritePrimitive(int v)
         {
             WritePrimitive((long)v);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void WritePrimitive(uint v)
         {
             WritePrimitive((ulong)v);
@@ -364,21 +371,25 @@ namespace VJson
             _writer.Advance(digits);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void WritePrimitive(char v)
         {
             WritePrimitive((ulong)v);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void WritePrimitive(float v)
         {
             WritePrimitive(string.Format("{0:G9}", v));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void WritePrimitive(double v)
         {
             WritePrimitive(string.Format("{0:G17}", v));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void WritePrimitive(decimal v)
         {
             WritePrimitive(v.ToString(CultureInfo.InvariantCulture));
