@@ -7,6 +7,12 @@ using BenchmarkDotNet.Running;
 
 namespace Benchmarks
 {
+    sealed class SomeObject
+    {
+        public string X;
+        public int Y;
+    }
+
     [Config(typeof(BenchmarkConfig))]
     public class AllSerializerBenchmark
     {
@@ -21,16 +27,27 @@ namespace Benchmarks
             new NetJSONSerializer(),
         };
 
-        private readonly byte[] i = Encoding.UTF8.GetBytes("255");
-        private readonly string s = "test";
+        private readonly byte[] ib = Encoding.UTF8.GetBytes("255");
         private readonly byte b = 255;
         private readonly long l = 255L;
 
-        [Benchmark]
-        public object IntegerToByte() => this.Serializer.Deserialize<byte>(i);
+        private readonly byte[] sb = Encoding.UTF8.GetBytes("\"test\"");
+        private readonly string s = "test";
+
+        private readonly SomeObject o = new SomeObject { X = "test", Y = 100 };
+        private readonly byte[] so = Encoding.UTF8.GetBytes("{\"X\":\"test\",\"Y\":100}");
 
         [Benchmark]
-        public object IntegerToLong() => this.Serializer.Deserialize<long>(i);
+        public object DeserializeToByte() => this.Serializer.Deserialize<byte>(ib);
+
+        [Benchmark]
+        public object DeserializeToLong() => this.Serializer.Deserialize<long>(ib);
+
+        [Benchmark]
+        public object DeserializeToString() => this.Serializer.Deserialize<string>(sb);
+
+        [Benchmark]
+        public object DeserializeToObject() => this.Serializer.Deserialize<SomeObject>(so);
 
         [Benchmark]
         public object SerializeByte() => this.Serializer.Serialize(b);
@@ -40,6 +57,9 @@ namespace Benchmarks
 
         [Benchmark]
         public object SerializeString() => this.Serializer.Serialize(s);
+
+        [Benchmark]
+        public object SerializeObject() => this.Serializer.Serialize(o);
     }
 
     public class Program

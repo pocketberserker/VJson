@@ -5,9 +5,14 @@ namespace Benchmarks.Serializers
 {
     public class SystemTextJsonSerializer : Serializer
     {
-        public override object Serialize<T>(T input) => JsonSerializer.Serialize(input);
+        System.Text.Json.JsonSerializerOptions option = new()
+        {
+            IncludeFields = true,
+        };
 
-        public override T Deserialize<T>(object input) => JsonSerializer.Deserialize<T>((byte[])input);
+        public override object Serialize<T>(T input) => JsonSerializer.Serialize(input, option);
+
+        public override T Deserialize<T>(object input) => JsonSerializer.Deserialize<T>((byte[])input, option);
 
         public override string ToString() => "System.Text.Json";
     }
