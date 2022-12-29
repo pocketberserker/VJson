@@ -12,6 +12,24 @@ using System.Linq;
 
 namespace VJson
 {
+
+    static class EnumCache
+    {
+        static readonly Dictionary<Type, bool> enumCache = new Dictionary<Type, bool>();
+
+        public static bool IsEnum(Type ty)
+        {
+            if (enumCache.TryGetValue(ty, out var isEnum))
+            {
+                return isEnum;
+            }
+
+            isEnum = ty.IsEnum;
+            enumCache.Add(ty, isEnum);
+            return isEnum;
+        }
+    }
+
     public enum NodeKind
     {
         Object,
@@ -532,7 +550,7 @@ namespace VJson
             }
 
             // Enum(integer or string)
-            if (ty.IsEnum)
+            if (EnumCache.IsEnum(ty))
             {
                 var attr = TypeHelper.GetCustomAttribute<JsonAttribute>(ty);
                 return attr != null && attr.EnumConversion == EnumConversionType.AsString

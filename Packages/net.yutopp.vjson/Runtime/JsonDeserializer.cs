@@ -427,7 +427,7 @@ namespace VJson
                 throw new DeserializeFailureException(msg);
             }
 
-            if (targetType.IsEnum)
+            if (EnumCache.IsEnum(targetType))
             {
                 var enumAttr = TypeHelper.GetCustomAttribute<JsonAttribute>(targetType);
                 switch (enumAttr != null ? enumAttr.EnumConversion : EnumConversionType.AsInt)

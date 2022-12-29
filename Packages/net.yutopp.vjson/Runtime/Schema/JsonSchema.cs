@@ -322,7 +322,7 @@ namespace VJson.Schema
 
                 case NodeKind.Integer:
                     object[] enumsForInteger = null;
-                    if (ty.IsEnum)
+                    if (EnumCache.IsEnum(ty))
                     {
                         enumsForInteger = System.Enum.GetValues(ty).Cast<object>().ToArray();
                     }
@@ -340,7 +340,7 @@ namespace VJson.Schema
 
                 case NodeKind.String:
                     object[] enumsForString = null;
-                    if (ty.IsEnum)
+                    if (EnumCache.IsEnum(ty))
                     {
                         enumsForString = TypeHelper.GetStringEnumNames(ty);
                     }

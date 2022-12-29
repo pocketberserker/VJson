@@ -89,7 +89,7 @@ namespace VJson.Schema
             if (_schema.Enum != null)
             {
                 var oEnum = o;
-                if (o != null && o.GetType().IsEnum && kind == NodeKind.String)
+                if (o != null && EnumCache.IsEnum(o.GetType()) && kind == NodeKind.String)
                 {
                     oEnum = TypeHelper.GetStringEnumNameOf(o);
                 }
@@ -199,7 +199,7 @@ namespace VJson.Schema
 
                 case NodeKind.String:
                     var oConverted =
-                        (o != null && o.GetType().IsEnum)
+                        (o != null && EnumCache.IsEnum(o.GetType()))
                         ? TypeHelper.GetStringEnumNameOf(o)
                         : (string)o;
 
