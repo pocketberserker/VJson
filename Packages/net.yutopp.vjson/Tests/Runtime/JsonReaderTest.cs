@@ -19,13 +19,10 @@ namespace VJson.UnitTests
         [TestCaseSource("FixtureArgs")]
         public void ReadTest(INode expected, string src)
         {
-            using (var s = new MemoryStream(Encoding.UTF8.GetBytes(src)))
-            using (var r = new JsonReader(s))
-            {
-                var actual = r.Read();
+            var r = new JsonReader(Encoding.UTF8.GetBytes(src));
+            var actual = r.Read();
 
-                Assert.That(actual, Is.EqualTo(expected));
-            }
+            Assert.That(actual, Is.EqualTo(expected));
         }
 
         //
@@ -297,12 +294,8 @@ namespace VJson.UnitTests
         [TestCaseSource("FixtureArgs")]
         public void ReadTest(string expectedMsg, string src)
         {
-            using (var s = new MemoryStream(Encoding.UTF8.GetBytes(src)))
-            using (var r = new JsonReader(s))
-            {
-                var ex = Assert.Throws<ParseFailedException>(() => r.Read());
-                Assert.AreEqual(expectedMsg, ex.Message);
-            }
+            var ex = Assert.Throws<ParseFailedException>(() => new JsonReader(Encoding.UTF8.GetBytes(src)).Read());
+            Assert.AreEqual(expectedMsg, ex.Message);
         }
 
         //
@@ -315,6 +308,16 @@ namespace VJson.UnitTests
 			new object[] {
                 "A node \"EOS\" is expected but '1' is provided (at position 3)",
                 @"  012  ",
+            },
+
+            new object[] {
+                "A node \"object\" is expected but '<EOS>' is provided (at position 1)",
+                "{",
+            },
+
+            new object[] {
+                "A charactor '\"' is expected but '<EOS>' is provided (at position 4)",
+                @"""012",
             },
         };
     }

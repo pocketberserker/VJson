@@ -10,6 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Runtime.CompilerServices;
 
 namespace VJson
 {
@@ -26,19 +27,33 @@ namespace VJson
 
         public object Deserialize(string text)
         {
-            using (var s = new MemoryStream(Encoding.UTF8.GetBytes(text)))
-            {
-                return Deserialize(s);
-            }
+            return DeserializeFromBytes(Encoding.UTF8.GetBytes(text));
         }
 
         public object Deserialize(Stream s)
         {
-            using (var r = new JsonReader(s))
+            if (s is MemoryStream ms && ms.TryGetBuffer(out var b))
             {
-                var node = r.Read();
-                return DeserializeFromNode(node);
+                return DeserializeFromSpan(b.AsSpan());
             }
+
+            var buffer = new byte[s.Length];
+            s.Read(buffer, 0, buffer.Length);
+
+            return DeserializeFromSpan(buffer);
+        }
+
+        public object DeserializeFromBytes(byte[] bytes)
+        {
+            return DeserializeFromSpan(bytes);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        object DeserializeFromSpan(ReadOnlySpan<byte> span)
+        {
+            var r = new JsonReader(span);
+            var node = r.Read();
+            return DeserializeFromNode(node);
         }
 
         public object DeserializeFromNode(INode node)

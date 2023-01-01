@@ -7,37 +7,32 @@
 
 using System;
 using System.Globalization;
-using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Collections.Generic;
 
 namespace VJson
 {
-    public sealed class JsonReader : IDisposable
+    public ref struct JsonReader
     {
-        private ReaderWrapper _reader;
+        private readonly ReadOnlySpan<byte> bytes;
+        private int offset;
 
-        private StringBuilder _strCache = new StringBuilder();
+        private List<byte> strCache;
 
-        public JsonReader(Stream s)
+        public JsonReader(in ReadOnlySpan<byte> bytes)
         {
-            _reader = new ReaderWrapper(s);
-        }
+            this.bytes = bytes;
+            offset = 0;
 
-        public void Dispose()
-        {
-            if (_reader != null)
-            {
-                ((IDisposable)_reader).Dispose();
-            }
+            strCache = new List<byte>();
         }
 
         public INode Read()
         {
             var node = ReadElement();
 
-            var next = _reader.Peek();
-            if (next != -1)
+            if (offset < bytes.Length)
             {
                 throw NodeExpectedError("EOS");
             }
@@ -88,12 +83,17 @@ namespace VJson
 
         INode ReadObject()
         {
-            var next = _reader.Peek();
-            if (next != '{')
+            if (offset >= bytes.Length)
             {
                 return null;
             }
-            _reader.Read(); // Discard
+
+            ref readonly var next = ref bytes[offset];
+            if (next != (byte)'{')
+            {
+                return null;
+            }
+            offset++; // Discard
 
             var node = new ObjectNode();
 
@@ -101,20 +101,25 @@ namespace VJson
             {
                 SkipWS();
 
-                next = _reader.Peek();
-                if (next == '}')
+                if (offset >= bytes.Length)
                 {
-                    _reader.Read(); // Discard
+                    throw NodeExpectedError("object");
+                }
+
+                next = ref bytes[offset];
+                if (next == (byte)'}')
+                {
+                    offset++; // Discard
                     break;
                 }
 
                 if (i > 0)
                 {
-                    if (next != ',')
+                    if (next != (byte)',')
                     {
                         throw TokenExpectedError(',');
                     }
-                    _reader.Read(); // Discard
+                    offset++; // Discard
                 }
 
                 SkipWS();
@@ -125,12 +130,12 @@ namespace VJson
                 }
                 SkipWS();
 
-                next = _reader.Peek();
-                if (next != ':')
+                next = ref bytes[offset];
+                if (next != (byte)':')
                 {
                     throw TokenExpectedError(':');
                 }
-                _reader.Read(); // Discard
+                offset++; // Discard
 
                 INode elemNode = ReadElement();
                 if (elemNode == null)
@@ -146,12 +151,17 @@ namespace VJson
 
         INode ReadArray()
         {
-            var next = _reader.Peek();
-            if (next != '[')
+            if (offset >= bytes.Length)
             {
                 return null;
             }
-            _reader.Read(); // Discard
+
+            ref readonly var next = ref bytes[offset];
+            if (next != (byte)'[')
+            {
+                return null;
+            }
+            offset++; // Discard
 
             var node = new ArrayNode();
 
@@ -159,20 +169,25 @@ namespace VJson
             {
                 SkipWS();
 
-                next = _reader.Peek();
-                if (next == ']')
+                if (offset >= bytes.Length)
                 {
-                    _reader.Read(); // Discard
+                    throw NodeExpectedError("array");
+                }
+
+                next = ref bytes[offset];
+                if (next == (byte)']')
+                {
+                    offset++; // Discard
                     break;
                 }
 
                 if (i > 0)
                 {
-                    if (next != ',')
+                    if (next != (byte)',')
                     {
                         throw TokenExpectedError(',');
                     }
-                    _reader.Read(); // Discard
+                    offset++; // Discard
                 }
 
                 INode elemNode = ReadElement();
@@ -189,27 +204,37 @@ namespace VJson
 
         INode ReadString()
         {
-            var next = _reader.Peek();
-            if (next != '"')
+            if (offset >= bytes.Length)
             {
                 return null;
             }
-            _reader.Read(); // Discard
+
+            ref readonly var next = ref bytes[offset];
+            if (next != (byte)'"')
+            {
+                return null;
+            }
+            offset++; // Discard
 
             for (; ; )
             {
-                next = _reader.Peek();
+                if (offset >= bytes.Length)
+                {
+                    throw TokenExpectedError('\"');
+                }
+
+                next = ref bytes[offset];
                 switch (next)
                 {
-                    case '"':
-                        _reader.Read(); // Discard
+                    case (byte)'"':
+                        offset++; // Discard
 
                         var span = CommitBuffer();
                         var str = Regex.Unescape(span);
                         return new StringNode(str);
 
-                    case '\\':
-                        _reader.Read(); // Discard
+                    case (byte)'\\':
+                        offset++; // Discard
 
                         if (!ReadEscape())
                         {
@@ -218,12 +243,17 @@ namespace VJson
                         break;
 
                     default:
-                        var c = _reader.Read(); // Consume
-                        var codePoint = c;
+                        ref readonly var c = ref bytes[offset++]; // Consume
+                        var codePoint = (int)c;
                         var isPair = char.IsHighSurrogate((char)c);
                         if (isPair)
                         {
-                            next = _reader.Read();  // Consume
+                            if (offset >= bytes.Length)
+                            {
+                                throw NodeExpectedError("low-surrogate");
+                            }
+
+                            next = ref bytes[offset++];  // Consume
                             if (!char.IsLowSurrogate((char)next))
                             {
                                 throw NodeExpectedError("low-surrogate");
@@ -249,47 +279,52 @@ namespace VJson
 
         bool ReadEscape()
         {
-            var next = _reader.Peek();
+            if (offset >= bytes.Length)
+            {
+                return false;
+            }
+
+            ref readonly var next = ref bytes[offset];
             switch (next)
             {
-                case '\"':
-                    SaveToBuffer('\\');
-                    SaveToBuffer(_reader.Read());
+                case (byte)'"':
+                    SaveToBuffer((byte)'\\');
+                    SaveToBuffer(bytes[offset++]);
                     return true;
 
-                case '\\':
-                    SaveToBuffer('\\');
-                    SaveToBuffer(_reader.Read());
+                case (byte)'\\':
+                    SaveToBuffer((byte)'\\');
+                    SaveToBuffer(bytes[offset++]);
                     return true;
 
-                case '/':
+                case (byte)'/':
                     // Escape is not required in C#
-                    SaveToBuffer(_reader.Read());
+                    SaveToBuffer(bytes[offset++]);
                     return true;
 
-                case 'b':
-                    SaveToBuffer('\\');
-                    SaveToBuffer(_reader.Read());
+                case (byte)'b':
+                    SaveToBuffer((byte)'\\');
+                    SaveToBuffer(bytes[offset++]);
                     return true;
 
-                case 'n':
-                    SaveToBuffer('\\');
-                    SaveToBuffer(_reader.Read());
+                case (byte)'n':
+                    SaveToBuffer((byte)'\\');
+                    SaveToBuffer(bytes[offset++]);
                     return true;
 
-                case 'r':
-                    SaveToBuffer('\\');
-                    SaveToBuffer(_reader.Read());
+                case (byte)'r':
+                    SaveToBuffer((byte)'\\');
+                    SaveToBuffer(bytes[offset++]);
                     return true;
 
-                case 't':
-                    SaveToBuffer('\\');
-                    SaveToBuffer(_reader.Read());
+                case (byte)'t':
+                    SaveToBuffer((byte)'\\');
+                    SaveToBuffer(bytes[offset++]);
                     return true;
 
-                case 'u':
-                    SaveToBuffer('\\');
-                    SaveToBuffer(_reader.Read());
+                case (byte)'u':
+                    SaveToBuffer((byte)'\\');
+                    SaveToBuffer(bytes[offset++]);
                     for (int i = 0; i < 4; ++i)
                     {
                         if (!ReadHex())
@@ -311,16 +346,21 @@ namespace VJson
                 return true;
             }
 
-            var next = _reader.Peek();
-            if (next >= 'A' && next <= 'F')
+            if (offset >= bytes.Length)
             {
-                SaveToBuffer(_reader.Read());
+                return false;
+            }
+
+            ref readonly var next = ref bytes[offset];
+            if (next >= (byte)'A' && next <= (byte)'F')
+            {
+                SaveToBuffer(bytes[offset++]);
                 return true;
             }
 
-            if (next >= 'a' && next <= 'f')
+            if (next >= (byte)'a' && next <= (byte)'f')
             {
-                SaveToBuffer(_reader.Read());
+                SaveToBuffer(bytes[offset++]);
                 return true;
             }
 
@@ -362,13 +402,18 @@ namespace VJson
                 return true;
             }
 
-            var next = _reader.Peek();
-            if (next != '-')
+            if (offset >= bytes.Length)
             {
                 return false;
             }
 
-            SaveToBuffer(_reader.Read());
+            ref readonly var next = ref bytes[offset];
+            if (next != (byte)'-')
+            {
+                return false;
+            }
+
+            SaveToBuffer(bytes[offset++]);
 
             if (ReadOneNine())
             {
@@ -397,39 +442,54 @@ namespace VJson
 
         bool ReadDigit()
         {
-            var next = _reader.Peek();
-            if (next != '0')
+            if (offset >= bytes.Length)
+            {
+                return false;
+            }
+
+            ref readonly var next = ref bytes[offset];
+            if (next != (byte)'0')
             {
                 return ReadOneNine();
             }
 
-            SaveToBuffer(_reader.Read());
+            SaveToBuffer(bytes[offset++]);
 
             return true;
         }
 
         bool ReadOneNine()
         {
-            var next = _reader.Peek();
-            if (next < '1' || next > '9')
+            if (offset >= bytes.Length)
             {
                 return false;
             }
 
-            SaveToBuffer(_reader.Read());
+            ref readonly var next = ref bytes[offset];
+            if (next < (byte)'1' || next > (byte)'9')
+            {
+                return false;
+            }
+
+            SaveToBuffer(bytes[offset++]);
 
             return true;
         }
 
         bool ReadFrac()
         {
-            var next = _reader.Peek();
-            if (next != '.')
+            if (offset >= bytes.Length)
             {
                 return false;
             }
 
-            SaveToBuffer(_reader.Read());
+            ref readonly var next = ref bytes[offset];
+            if (next != (byte)'.')
+            {
+                return false;
+            }
+
+            SaveToBuffer(bytes[offset++]);
 
             if (!ReadDigits())
             {
@@ -441,13 +501,18 @@ namespace VJson
 
         bool ReadExp()
         {
-            var next = _reader.Peek();
-            if (next != 'E' && next != 'e')
+            if (offset >= bytes.Length)
             {
                 return false;
             }
 
-            SaveToBuffer(_reader.Read());
+            ref readonly var next = ref bytes[offset];
+            if (next != (byte)'E' && next != (byte)'e')
+            {
+                return false;
+            }
+
+            SaveToBuffer(bytes[offset++]);
 
             ReadSign();
 
@@ -461,25 +526,35 @@ namespace VJson
 
         bool ReadSign()
         {
-            var next = _reader.Peek();
-            if (next != '+' && next != '-')
+            if (offset >= bytes.Length)
             {
                 return false;
             }
 
-            SaveToBuffer(_reader.Read());
+            ref readonly var next = ref bytes[offset];
+            if (next != (byte)'+' && next != (byte)'-')
+            {
+                return false;
+            }
+
+            SaveToBuffer(bytes[offset++]);
 
             return true;
         }
 
         INode ReadLiteral()
         {
+            if (offset >= bytes.Length)
+            {
+                return null;
+            }
+
             var s = String.Empty;
 
-            var next = _reader.Peek();
+            ref readonly var next = ref bytes[offset];
             switch (next)
             {
-                case 't':
+                case (byte)'t':
                     // Maybe true
                     s = ConsumeChars(4);
                     if (s.ToLower() != "true")
@@ -488,7 +563,7 @@ namespace VJson
                     }
                     return new BooleanNode(true);
 
-                case 'f':
+                case (byte)'f':
                     // Maybe false
                     s = ConsumeChars(5);
                     if (s.ToLower() != "false")
@@ -497,7 +572,7 @@ namespace VJson
                     }
                     return new BooleanNode(false);
 
-                case 'n':
+                case (byte)'n':
                     // Maybe null
                     s = ConsumeChars(4);
                     if (s.ToLower() != "null")
@@ -515,14 +590,19 @@ namespace VJson
         {
             for (; ; )
             {
-                var next = _reader.Peek();
+                if (offset >= bytes.Length)
+                {
+                    return;
+                }
+
+                ref readonly var next = ref bytes[offset];
                 switch (next)
                 {
                     case 0x0009:
                     case 0x000a:
                     case 0x000d:
                     case 0x0020:
-                        _reader.Read(); // Discard
+                        offset++; // Discard
                         break;
 
                     default:
@@ -531,15 +611,15 @@ namespace VJson
             }
         }
 
-        void SaveToBuffer(int c)
+        void SaveToBuffer(byte c)
         {
-            _strCache.Append((char)c);
+            strCache.Add(c);
         }
 
         string CommitBuffer()
         {
-            var span = _strCache.ToString();
-            _strCache.Length = 0;
+            var span = Encoding.UTF8.GetString(strCache.ToArray());
+            strCache.Clear();
 
             return span;
         }
@@ -548,7 +628,12 @@ namespace VJson
         {
             for (int i = 0; i < length; ++i)
             {
-                var c = _reader.Read();
+                if (offset >= bytes.Length)
+                {
+                    break;
+                }
+
+                var c = bytes[offset++];
                 SaveToBuffer(c);
             }
             return CommitBuffer();
@@ -556,64 +641,22 @@ namespace VJson
 
         ParseFailedException NodeExpectedError(string expected)
         {
-            var msg = String.Format("A node \"{0}\" is expected but '{1}' is provided", expected, _reader.LastToken);
-            return new ParseFailedException(msg, _reader.Position);
+            var msg = String.Format(
+                "A node \"{0}\" is expected but '{1}' is provided",
+                expected,
+                offset < bytes.Length ? ((char)bytes[offset]).ToString() : "<EOS>"
+            );
+            return new ParseFailedException(msg, (ulong)offset);
         }
 
         ParseFailedException TokenExpectedError(char expected)
         {
-            var msg = String.Format("A charactor '{0}' is expected but '{1}' is provided", expected, _reader.LastToken);
-            return new ParseFailedException(msg, _reader.Position);
-        }
-
-        private class ReaderWrapper : IDisposable
-        {
-            private StreamReader _reader;
-
-            public ulong Position
-            {
-                get; private set;
-            }
-
-            private int _lastToken;
-            public string LastToken
-            {
-                get
-                {
-                    if (_lastToken == -1) {
-                        return "<EOS>";
-                    }
-                    return ((char)_lastToken).ToString();
-                }
-            }
-
-            public ReaderWrapper(Stream s)
-            {
-                _reader = new StreamReader(s); // Encodings will be auto detected
-                Position = 0;
-            }
-
-            public void Dispose()
-            {
-                if (_reader != null)
-                {
-                    ((IDisposable)_reader).Dispose();
-                }
-            }
-
-            public int Peek()
-            {
-                _lastToken = _reader.Peek();
-                return _lastToken;
-            }
-
-            public int Read()
-            {
-                ++Position;
-
-                _lastToken = _reader.Read();
-                return _lastToken;
-            }
+            var msg = String.Format(
+                "A charactor '{0}' is expected but '{1}' is provided",
+                expected,
+                offset < bytes.Length ? ((char)bytes[offset]).ToString() : "<EOS>"
+            );
+            return new ParseFailedException(msg, (ulong)offset);
         }
     }
 

@@ -63,12 +63,10 @@ namespace VJson
         {
             // TODO: fix performance...
             var buffer = SerializeToBytes(o);
+            System.Console.WriteLine(Encoding.UTF8.GetString(buffer));
 
-            using (var s = new MemoryStream(buffer))
-            {
-                var d = new JsonDeserializer(typeof(INode));
-                return d.Deserialize(s) as INode;
-            }
+            var d = new JsonDeserializer(typeof(INode));
+            return d.DeserializeFromBytes(buffer) as INode;
         }
 
         void SerializeValue<T>(JsonWriter writer, T o)

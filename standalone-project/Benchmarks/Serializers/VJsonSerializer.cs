@@ -14,11 +14,8 @@ namespace Benchmarks.Serializers
 
         public override T Deserialize<T>(object input)
         {
-            using(var ms = new MemoryStream((byte[])input))
-            {
-                var d = new JsonDeserializer(typeof(T));
-                return (T)d.Deserialize(ms);
-            }
+            var d = new JsonDeserializer(typeof(T));
+            return (T)d.DeserializeFromBytes((byte[])input);
         }
 
         public override string ToString() => "VJson";
