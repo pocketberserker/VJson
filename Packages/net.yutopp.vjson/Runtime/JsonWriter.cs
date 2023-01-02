@@ -18,7 +18,7 @@ namespace VJson
     /// Write JSON data to buffer as UTF-8.
     /// </summary>
     // TODO: Add [Preserve] in Unity
-    public sealed class JsonWriter : IDisposable
+    public struct JsonWriter
     {
         struct State
         {
@@ -39,26 +39,20 @@ namespace VJson
         private IBufferWriter<byte> _writer;
         private int _indent;
 
-        private Stack<State> _states = new Stack<State>();
+        private Stack<State> _states;
 
         public JsonWriter(IBufferWriter<byte> writer, int indent = 0)
         {
             _writer = writer;
             _indent = indent;
 
+            _states = new Stack<State>();
+
             _states.Push(new State
             {
                 Kind = StateKind.None,
                 Depth = 0,
             });
-        }
-
-        public void Dispose()
-        {
-            if (_writer != null)
-            {
-                _writer = null;
-            }
         }
 
         public void WriteObjectStart()

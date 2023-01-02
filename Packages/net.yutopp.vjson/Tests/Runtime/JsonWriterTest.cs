@@ -19,7 +19,7 @@ namespace VJson.UnitTests
         public void ValueWriteTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
+            var f = new JsonWriter(b);
             {
                 f.WriteValue(1);
             }
@@ -32,7 +32,7 @@ namespace VJson.UnitTests
         public void EmojiValueWriteTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
+            var f = new JsonWriter(b);
             {
                 f.WriteValue("🍣");
             }
@@ -54,7 +54,7 @@ namespace VJson.UnitTests
         public void EscapeSequenceValueWriteTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
+            var f = new JsonWriter(b);
             {
                 f.WriteValue("\"\\/\b\n\r\t");
             }
@@ -70,7 +70,7 @@ namespace VJson.UnitTests
         public void EmptyTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
+            var f = new JsonWriter(b);
             {
                 f.WriteObjectStart();
                 f.WriteObjectEnd();
@@ -84,7 +84,7 @@ namespace VJson.UnitTests
         public void SingleTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
+            var f = new JsonWriter(b);
             {
                 f.WriteObjectStart();
                 f.WriteObjectKey("foo");
@@ -100,7 +100,7 @@ namespace VJson.UnitTests
         public void MultiTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
+            var f = new JsonWriter(b);
             {
                 f.WriteObjectStart();
                 f.WriteObjectKey("foo");
@@ -119,7 +119,7 @@ namespace VJson.UnitTests
         public void NestedTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
+            var f = new JsonWriter(b);
             {
                 f.WriteObjectStart();
                 f.WriteObjectKey("foo");
@@ -143,7 +143,7 @@ namespace VJson.UnitTests
         public void EmptyTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
+            var f = new JsonWriter(b);
             {
                 f.WriteArrayStart();
                 f.WriteArrayEnd();
@@ -157,7 +157,7 @@ namespace VJson.UnitTests
         public void SingleTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
+            var f = new JsonWriter(b);
             {
                 f.WriteArrayStart();
                 f.WriteValue(42);
@@ -172,7 +172,7 @@ namespace VJson.UnitTests
         public void MultiTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
+            var f = new JsonWriter(b);
             {
                 f.WriteArrayStart();
                 f.WriteValue(42);
@@ -188,7 +188,7 @@ namespace VJson.UnitTests
         public void NestedTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
+            var f = new JsonWriter(b);
             {
                 f.WriteArrayStart();
                 f.WriteValue(42);
@@ -209,7 +209,7 @@ namespace VJson.UnitTests
         public void CompoundTest()
         {
             var b = new ArrayBufferWriter<byte>();
-            using (var f = new JsonWriter(b))
+            var f = new JsonWriter(b);
             {
                 f.WriteArrayStart();
     
