@@ -27,6 +27,9 @@ namespace Benchmarks
             new NetJSONSerializer(),
         };
 
+        private readonly byte[] tb = Encoding.UTF8.GetBytes("true");
+        private readonly bool t = true;
+
         private readonly byte[] ib = Encoding.UTF8.GetBytes("255");
         private readonly byte b = 255;
         private readonly long l = 255L;
@@ -36,6 +39,9 @@ namespace Benchmarks
 
         private readonly SomeObject o = new SomeObject { X = "test", Y = 100 };
         private readonly byte[] so = Encoding.UTF8.GetBytes("{\"X\":\"test\",\"Y\":100}");
+
+        [Benchmark]
+        public object DeserializeToBool() => this.Serializer.Deserialize<bool>(tb);
 
         [Benchmark]
         public object DeserializeToByte() => this.Serializer.Deserialize<byte>(ib);
@@ -48,6 +54,9 @@ namespace Benchmarks
 
         [Benchmark]
         public object DeserializeToObject() => this.Serializer.Deserialize<SomeObject>(so);
+
+        [Benchmark]
+        public object SerializeBool() => this.Serializer.Serialize(t);
 
         [Benchmark]
         public object SerializeByte() => this.Serializer.Serialize(b);
