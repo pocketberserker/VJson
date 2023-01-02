@@ -191,6 +191,12 @@ namespace VJson
             return d.Deserialize(text);
         }
 
+        public object Deserialize(byte[] bytes)
+        {
+            var d = new JsonDeserializer(_type);
+            return d.DeserializeFromBytes(bytes);
+        }
+
         public object Deserialize(Stream s)
         {
             var d = new JsonDeserializer(_type);
