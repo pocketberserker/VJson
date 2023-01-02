@@ -626,17 +626,9 @@ namespace VJson
 
         string ConsumeChars(int length)
         {
-            for (int i = 0; i < length; ++i)
-            {
-                if (offset >= bytes.Length)
-                {
-                    break;
-                }
-
-                var c = bytes[offset++];
-                SaveToBuffer(c);
-            }
-            return CommitBuffer();
+            var o = offset;
+            offset += length;
+            return Encoding.UTF8.GetString(bytes.Slice(o, length));
         }
 
         ParseFailedException NodeExpectedError(string expected)
